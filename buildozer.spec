@@ -38,3 +38,8 @@ version = 0.1
 [buildozer]
 # (int) log level
 log_level = 2
+
+# add or edit this line
+# (Use only one: arm64-v8a is recommended)
+android.archs = arm64-v8a
+
