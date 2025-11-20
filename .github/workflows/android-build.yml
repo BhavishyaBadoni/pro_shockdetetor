@@ -1,0 +1,101 @@
+name: Android Build (Buildozer)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-apk:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    env:
+      # Change package name if different in buildozer.spec
+      PACKAGE_NAME: org.example.shockdetector
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Cache pip and buildozer artifacts
+        uses: actions/cache@v4
+        with:
+          # Cache pip wheels and python build artifacts
+          path: |
+            ~/.cache/pip
+            .venv
+            ./.buildozer/android/platform
+            ./.buildozer/android/platform/build-arm64-v8a_armeabi-v7a
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/buildozer.spec') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/buildozer.spec') }}-
+            ${{ runner.os }}-buildozer-
+
+      - name: Install apt dependencies (needed for Kivy / p4a)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git pkg-config python3.10-dev python3.10-venv \
+            libgl1-mesa-dev libgles2-mesa-dev \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            libmtdev-dev libjpeg-dev libpng-dev libfreetype6-dev \
+            libavcodec-dev libavformat-dev libswscale-dev \
+            openjdk-17-jdk autoconf automake libtool zlib1g-dev libffi-dev
+          # show free space so we can inspect logs quickly
+          df -h .
+
+      - name: Create & activate virtualenv
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip setuptools wheel
+        shell: bash
+
+      - name: Install Python build tools into venv
+        run: |
+          source .venv/bin/activate
+          pip install cython==0.29.36  # pinned; adjust if needed
+          pip install "python-for-android>=2024.1.0" buildozer
+          # optionally install other requirements if you have requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+        shell: bash
+
+      - name: Show buildozer version and environment
+        run: |
+          source .venv/bin/activate
+          buildozer --version || true
+          python -V
+          java -version || true
+          echo "PWD: $(pwd)"
+        shell: bash
+
+      - name: Build APK with Buildozer
+        env:
+          ANDROIDAPI: 33
+        run: |
+          source .venv/bin/activate
+          # ensure buildozer updates spec if you reference env; otherwise it uses your buildozer.spec
+          buildozer android debug -v
+        shell: bash
+
+      - name: Upload APK artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shockdetector-apk
+          path: |
+            bin/*.apk
+            bin/*.aab
+            ./.buildozer/android/platform/build-*/dist/*/*.apk
