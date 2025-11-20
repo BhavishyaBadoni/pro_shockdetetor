@@ -12,7 +12,8 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Setup Python 3.10
         uses: actions/setup-python@v4
@@ -32,20 +33,29 @@ jobs:
             libavcodec-dev libavformat-dev libswscale-dev \
             openjdk-17-jdk autoconf automake libtool zlib1g-dev libffi-dev
           df -h .
+        shell: bash
 
-      - name: Build APK with Buildozer
+      - name: Build (create venv, install tools, build apk)
         run: |
+          # create venv and activate it in the same step
           python -m venv .venv
-          source .venv/bin/activate
+          echo "ls -la .venv:"
+          ls -la .venv || true
+          echo "ls -la .venv/bin:"
+          ls -la .venv/bin || true
 
+          # activate and install
+          source .venv/bin/activate
           python -m pip install --upgrade pip setuptools wheel
+
+          # install build tools inside venv
           pip install cython==0.29.36
           pip install "python-for-android>=2024.1.0" buildozer
 
-          # optional: install your app dependencies
+          # optional: install app requirements if present
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-          # Build APK
+          # run buildozer (verbose)
           buildozer android debug -v
         shell: bash
 
@@ -57,3 +67,4 @@ jobs:
           path: |
             bin/*.apk
             bin/*.aab
+            ./.buildozer/android/platform/build-*/dist/*/*.apk
