@@ -1,0 +1,151 @@
+#:kivy 2.1.0
+
+<Root>:
+    HomeScreen:
+        name: "home"
+    SettingsScreen:
+        name: "settings"
+    ContactScreen:
+        name: "contact"
+    LogScreen:
+        name: "log"
+
+<HomeScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(10)
+        Label:
+            text: "Shock Detector"
+            font_size: '24sp'
+            size_hint_y: None
+            height: self.texture_size[1] + dp(10)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(200)
+            canvas.before:
+                Color:
+                    rgba: 0.95,0.95,0.95,1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                id: status_label
+                text: "Monitoring active"
+                halign: "center"
+                valign: "middle"
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(120)
+            spacing: dp(8)
+            Button:
+                text: "Settings"
+                on_release: app.root.current = "settings"
+            Button:
+                text: "Contact"
+                on_release: app.root.current = "contact"
+            Button:
+                text: "Logs"
+                on_release: app.root.current = "log"
+            Button:
+                text: "Stop Monitor"
+                on_release: app.monitor.stop()
+
+<SettingsScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(8)
+        Label:
+            text: "Settings"
+            font_size: "20sp"
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(140)
+            Label: text: "Threshold (m/s²):"
+            TextInput:
+                id: threshold_input
+                text: str(root.manager.app.storage.get('threshold', 30.0))
+                input_filter: 'float'
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(60)
+            Label: text: "Countdown seconds:"
+            TextInput:
+                id: countdown_input
+                text: str(root.manager.app.storage.get('countdown', 20))
+                input_filter: 'int'
+        BoxLayout:
+            size_hint_y: None
+            height: dp(48)
+            Button:
+                text: "Save"
+                on_release:
+                    app.storage.put('threshold', float(threshold_input.text))
+                    app.storage.put('countdown', int(countdown_input.text))
+                    app.root.current = "home"
+        Button:
+            text: "Back"
+            size_hint_y: None
+            height: dp(48)
+            on_release: app.root.current = "home"
+
+<ContactScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(8)
+        Label:
+            text: "Emergency Contact"
+            font_size: "20sp"
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(100)
+            Label: text: "Name:"
+            TextInput:
+                id: contact_name
+                text: app.storage.get('contact_name', '')
+            Label: text: "Phone (with country code):"
+            TextInput:
+                id: contact_phone
+                text: app.storage.get('contact_phone', '')
+        BoxLayout:
+            size_hint_y: None
+            height: dp(48)
+            Button:
+                text: "Save"
+                on_release:
+                    app.storage.put('contact_name', contact_name.text)
+                    app.storage.put('contact_phone', contact_phone.text)
+                    app.root.current = "home"
+        Button:
+            text: "Back"
+            size_hint_y: None
+            height: dp(48)
+            on_release: app.root.current = "home"
+
+<LogScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(8)
+        Label:
+            text: "Event Logs"
+            font_size: "20sp"
+        ScrollView:
+            GridLayout:
+                id: log_container
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                row_default_height: dp(28)
+                row_force_default: True
+        Button:
+            text: "Back"
+            size_hint_y: None
+            height: dp(48)
+            on_release: app.root.current = "home"
