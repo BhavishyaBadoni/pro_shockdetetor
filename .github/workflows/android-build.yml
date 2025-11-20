@@ -20,7 +20,7 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: Install apt dependencies
+      - name: Install OS dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -33,19 +33,19 @@ jobs:
             openjdk-17-jdk autoconf automake libtool zlib1g-dev libffi-dev
           df -h .
 
-      - name: Create & activate venv, install build tools
+      - name: Build APK with Buildozer
         run: |
           python -m venv .venv
           source .venv/bin/activate
+
           python -m pip install --upgrade pip setuptools wheel
           pip install cython==0.29.36
           pip install "python-for-android>=2024.1.0" buildozer
-        shell: bash
 
-      - name: Build APK with Buildozer
-        run: |
-          source .venv/bin/activate
-          # Optionally set android arch via environment or ensure buildozer.spec is set to one arch
+          # optional: install your app dependencies
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+          # Build APK
           buildozer android debug -v
         shell: bash
 
